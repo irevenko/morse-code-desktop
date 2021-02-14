@@ -1,1 +1,1 @@
-# morse-code
+# Morse Code Desktop App
