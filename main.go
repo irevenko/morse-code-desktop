@@ -1,4 +1,3 @@
-
 package main
 
 import (
@@ -35,8 +34,8 @@ func main() {
 	toEntry, _ := gtk.EntryNew()
 	fromEntry, _ := gtk.EntryNew()
 
-	grid.Attach(toEntry, 1,0,1,1)
-	grid.Attach(fromEntry, 1,1,1,1)
+	grid.Attach(toEntry, 1,0,2,1)
+	grid.Attach(fromEntry, 1,1,2,1)
 
 	translateToBox := m.SetupBox(gtk.ORIENTATION_HORIZONTAL)
 	translateToTextView := m.SetupTview()
@@ -71,13 +70,8 @@ func main() {
 		buffer.SetText(translation)
 	})
 
-	playButton := m.SetupButton("Play", func() {
-		m.PlayBeep()
-	})
-
-	grid.Attach(toButton, 2, 0, 1, 1)
-	grid.Attach(fromButton, 2, 1, 1, 1)
-	grid.Attach(playButton, 0,5,1,1)
+	grid.Attach(toButton, 3, 0, 1, 1)
+	grid.Attach(fromButton, 3, 1, 1, 1)
 
 	win.Add(grid)
 	win.Connect("destroy", gtk.MainQuit)

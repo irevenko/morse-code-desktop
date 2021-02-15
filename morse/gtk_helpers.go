@@ -33,7 +33,7 @@ func SetupButton(label string, onClick func()) *gtk.Button {
 
 func SetWindowOptions(w *gtk.Window) {
 	w.SetPosition(gtk.WIN_POS_CENTER)
-	w.SetDefaultSize(800, 300)
+	w.SetDefaultSize(900, 300)
 	w.SetTitle("Morse Code Translator")
 	w.SetResizable(false)
 	w.SetBorderWidth(10)
