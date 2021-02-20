@@ -1,39 +1,20 @@
 package morse
 
 import (
-	"flag"
-	"github.com/hajimehoshi/oto"
 	"io"
 	"math"
+	"strings"
 	"sync"
 	"time"
+
+	"github.com/hajimehoshi/oto"
 )
 
-//func read() (decoder *minimp3.Decoder, audioData []byte) {
-//	file, err := ioutil.ReadFile("beep-07.mp3")
-//	if err != nil {
-//		log.Fatal(file)
-//	}
-//
-//	var dec *minimp3.Decoder
-//	var data []byte
-//	dec, data, _ = minimp3.DecodeFull(file)
-//
-//	return dec, data
-//}
-//
-//func play(data []byte, dec *minimp3.Decoder, p *oto.Player) {
-//	p.Write(data)
-//
-//	<-time.After(time.Second)
-//
-//	dec.Close()
-//}
-
-var (
-	sampleRate      = flag.Int("samplerate", 44100, "sample rate")
-	channelNum      = flag.Int("channelnum", 2, "number of channel")
-	bitDepthInBytes = flag.Int("bitdepthinbytes", 2, "bit depth in bytes")
+const (
+	frequency       = 800.0
+	sampleRate      = 20000
+	channelNum      = 2
+	bitDepthInBytes = 2
 )
 
 type SineWave struct {
@@ -45,7 +26,7 @@ type SineWave struct {
 }
 
 func NewSineWave(freq float64, duration time.Duration) *SineWave {
-	l := int64(*channelNum) * int64(*bitDepthInBytes) * int64(*sampleRate) * int64(duration) / int64(time.Second)
+	l := int64(channelNum) * int64(bitDepthInBytes) * int64(sampleRate) * int64(duration) / int64(time.Second)
 	l = l / 4 * 4
 	return &SineWave{
 		freq:   freq,
@@ -76,16 +57,16 @@ func (s *SineWave) Read(buf []byte) (int, error) {
 		buf = make([]byte, len(origBuf)+4-len(origBuf)%4)
 	}
 
-	length := float64(*sampleRate) / float64(s.freq)
+	length := float64(sampleRate) / float64(s.freq)
 
-	num := (*bitDepthInBytes) * (*channelNum)
+	num := (bitDepthInBytes) * (channelNum)
 	p := s.pos / int64(num)
-	switch *bitDepthInBytes {
+	switch bitDepthInBytes {
 	case 1:
 		for i := 0; i < len(buf)/num; i++ {
 			const max = 127
 			b := int(math.Sin(2*math.Pi*float64(p)/length) * 0.3 * max)
-			for ch := 0; ch < *channelNum; ch++ {
+			for ch := 0; ch < channelNum; ch++ {
 				buf[num*i+ch] = byte(b + 128)
 			}
 			p++
@@ -94,7 +75,7 @@ func (s *SineWave) Read(buf []byte) (int, error) {
 		for i := 0; i < len(buf)/num; i++ {
 			const max = 32767
 			b := int16(math.Sin(2*math.Pi*float64(p)/length) * 0.3 * max)
-			for ch := 0; ch < *channelNum; ch++ {
+			for ch := 0; ch < channelNum; ch++ {
 				buf[num*i+2*ch] = byte(b)
 				buf[num*i+1+2*ch] = byte(b >> 8)
 			}
@@ -116,51 +97,74 @@ func (s *SineWave) Read(buf []byte) (int, error) {
 	return n, nil
 }
 
-func play(context *oto.Context, freq float64, duration time.Duration) error {
-	p := context.NewPlayer()
+func Play(p *oto.Player, freq float64, duration time.Duration) error {
 	s := NewSineWave(freq, duration)
 	if _, err := io.Copy(p, s); err != nil {
 		return err
 	}
-	if err := p.Close(); err != nil {
-		return err
-	}
+
 	return nil
 }
 
-func run() error {
-	const (
-		freqC = 523.3
-	)
-
-	c, err := oto.NewContext(*sampleRate, *channelNum, *bitDepthInBytes, 4096)
-	if err != nil {
-		return err
-	}
-
+func RunShort(c *oto.Player) error {
 	var wg sync.WaitGroup
 
 	wg.Add(1)
 	go func() {
 		defer wg.Done()
-		if err := play(c, freqC, 3*time.Second); err != nil {
+		if err := Play(c, frequency, 150*time.Millisecond); err != nil {
 			panic(err)
 		}
 	}()
 
-
 	wg.Wait()
-	c.Close()
 	return nil
 }
-func playBeep() {
-	//decoder, data := read()
-	//
-	//var context *oto.Context
-	//context, _= oto.NewContext(decoder.SampleRate, decoder.Channels, 2, 1024)
-	//player := context.NewPlayer()
-	//
-	//
-	//play(data, decoder, player)
-	//play(data, decoder, player)
+
+func RunLong(c *oto.Player) error {
+	var wg sync.WaitGroup
+
+	wg.Add(1)
+	go func() {
+		defer wg.Done()
+		if err := Play(c, frequency, 300*time.Millisecond); err != nil {
+			panic(err)
+		}
+	}()
+
+	wg.Wait()
+	return nil
 }
+
+func SleepShort() {
+	time.Sleep(100 * time.Millisecond)
+}
+
+func SleepLong() {
+	time.Sleep(200 * time.Millisecond)
+}
+
+func MorseToSound(morseSequence string, c *oto.Context, p *oto.Player) {
+	morseSlice := strings.Split(morseSequence, "")
+
+	for _, v := range morseSlice {
+		if v == "." {
+			RunShort(p)
+			SleepShort()
+		}
+
+		if v == "-" {
+			RunLong(p)
+			SleepShort()
+		}
+
+		if v == " " {
+			SleepLong()
+		}
+
+		if v == "/" {
+			SleepLong()
+		}
+	}
+}
+

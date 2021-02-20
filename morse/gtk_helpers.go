@@ -33,7 +33,7 @@ func SetupButton(label string, onClick func()) *gtk.Button {
 
 func SetWindowOptions(w *gtk.Window) {
 	w.SetPosition(gtk.WIN_POS_CENTER)
-	w.SetDefaultSize(900, 300)
+	w.SetDefaultSize(680, 300)
 	w.SetTitle("Morse Code Translator")
 	w.SetResizable(false)
 	w.SetBorderWidth(10)
@@ -59,4 +59,23 @@ func SetupTview() *gtk.TextView {
 		log.Fatal("Unable to create TextView:", err)
 	}
 	return tv
+}
+
+func GetBufferFromTview(tv *gtk.TextView) *gtk.TextBuffer {
+	buffer, err := tv.GetBuffer()
+	if err != nil {
+		log.Fatal("Unable to get buffer:", err)
+	}
+	return buffer
+}
+
+func GetTextFromTview(tv *gtk.TextView) string {
+	buffer := GetBufferFromTview(tv)
+	start, end := buffer.GetBounds()
+
+	text, err := buffer.GetText(start, end, true)
+	if err != nil {
+		log.Fatal("Unable to get text:", err)
+	}
+	return text
 }

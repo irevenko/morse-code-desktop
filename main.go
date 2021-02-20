@@ -3,6 +3,7 @@ package main
 import (
 	m "./morse"
 	"github.com/gotk3/gotk3/gtk"
+	"github.com/hajimehoshi/oto"
 	"log"
 )
 
@@ -70,8 +71,21 @@ func main() {
 		buffer.SetText(translation)
 	})
 
+
+	c, err := oto.NewContext(20000, 2, 2, 4096)
+	if err != nil {
+		log.Fatal(err)
+	}
+	p := c.NewPlayer()
+
+	playButton := m.SetupButton("Play Morse Code", func() {
+		morseSequence := m.GetTextFromTview(translateToTextView)
+		m.MorseToSound(morseSequence, c, p)
+	})
+
 	grid.Attach(toButton, 3, 0, 1, 1)
 	grid.Attach(fromButton, 3, 1, 1, 1)
+	grid.Attach(playButton, 1,5,1,1)
 
 	win.Add(grid)
 	win.Connect("destroy", gtk.MainQuit)
